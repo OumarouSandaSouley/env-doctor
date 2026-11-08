@@ -6,6 +6,8 @@ import { scanCodebase } from './scanners/index.js';
 import { analyzeEnvironment } from './engine/analyzer.js';
 import { reportConsole } from './reporters/console.js';
 import { reportJson } from './reporters/json.js';
+import { fixEnvExample } from './engine/fixer.js';
+import pc from 'picocolors';
 
 const program = new Command();
 
@@ -17,6 +19,7 @@ program
   .option('-c, --config <path>', 'Path to custom config file (.envdiffrc)')
   .option('--ci', 'Run in CI mode (exits with code 1 on errors)')
   .option('--json', 'Output report in JSON format')
+  .option('--fix', 'Automatically add missing variables to .env.example')
   .action((options) => {
     const cwd = path.resolve(options.dir);
     const config = loadConfig(cwd, options.config);
@@ -29,13 +32,29 @@ program
 
     const scanResult = scanCodebase(cwd);
 
-    const report = analyzeEnvironment(
+    let report = analyzeEnvironment(
       scanResult.usages,
       envExampleResult.variables,
       envResult.variables,
       config,
       scanResult.warnings
     );
+
+    if (options.fix && report.missingInExample.length > 0) {
+      const added = fixEnvExample(envExamplePath, report.missingInExample);
+      if (!options.json) {
+        console.log(pc.green(`✨ Successfully added ${added.length} missing variable(s) to ${config.envExamplePath}\n`));
+      }
+      // Re-load and re-analyze after fix
+      const updatedEnvExampleResult = loadEnvFile(envExamplePath);
+      report = analyzeEnvironment(
+        scanResult.usages,
+        updatedEnvExampleResult.variables,
+        envResult.variables,
+        config,
+        scanResult.warnings
+      );
+    }
 
     if (options.json) {
       console.log(reportJson(report));

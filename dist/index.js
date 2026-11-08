@@ -31,6 +31,7 @@ var __toCommonJS = (mod) => __copyProps(__defProp({}, "__esModule", { value: tru
 var index_exports = {};
 __export(index_exports, {
   analyzeEnvironment: () => analyzeEnvironment,
+  fixEnvExample: () => fixEnvExample,
   loadConfig: () => loadConfig,
   loadEnvFile: () => loadEnvFile,
   loadIgnoreRules: () => loadIgnoreRules,
@@ -308,6 +309,38 @@ function analyzeEnvironment(codeUsages, envExampleVars, envVars, config, codeWar
   };
 }
 
+// src/engine/fixer.ts
+var import_node_fs6 = __toESM(require("fs"));
+var import_node_path4 = __toESM(require("path"));
+function fixEnvExample(envExamplePath, missingVariables) {
+  if (missingVariables.length === 0) return [];
+  const absolutePath = import_node_path4.default.resolve(envExamplePath);
+  let existingContent = "";
+  if (import_node_fs6.default.existsSync(absolutePath)) {
+    existingContent = import_node_fs6.default.readFileSync(absolutePath, "utf-8");
+  }
+  if (existingContent && !existingContent.endsWith("\n")) {
+    existingContent += "\n";
+  }
+  const addedVars = [];
+  let newContent = existingContent;
+  if (!existingContent && missingVariables.length > 0) {
+    newContent += `# Added automatically by envdiff --fix
+`;
+  }
+  for (const item of missingVariables) {
+    const varName = item.name;
+    const regex = new RegExp(`^\\s*(?:export\\s+)?${varName}\\s*=`, "m");
+    if (!regex.test(newContent)) {
+      newContent += `${varName}=
+`;
+      addedVars.push(varName);
+    }
+  }
+  import_node_fs6.default.writeFileSync(absolutePath, newContent, "utf-8");
+  return addedVars;
+}
+
 // src/reporters/console.ts
 var import_picocolors = __toESM(require("picocolors"));
 function reportConsole(report) {
@@ -373,6 +406,7 @@ function reportJson(report) {
 // Annotate the CommonJS export names for ESM import in node:
 0 && (module.exports = {
   analyzeEnvironment,
+  fixEnvExample,
   loadConfig,
   loadEnvFile,
   loadIgnoreRules,

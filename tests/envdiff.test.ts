@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { loadEnvFile } from '../src/env/loader.js';
 import { analyzeEnvironment } from '../src/engine/analyzer.js';
+import { fixEnvExample } from '../src/engine/fixer.js';
 import { defaultConfig } from '../src/config.js';
 import fs from 'node:fs';
 import path from 'node:path';
@@ -31,5 +32,20 @@ describe('envdiff core tests', () => {
     expect(report.isValid).toBe(false);
     expect(report.missingInExample.length).toBe(1);
     expect(report.missingInExample[0].name).toBe('STRIPE_KEY');
+  });
+
+  it('should auto-fix missing variables in .env.example', () => {
+    const tempDir = fs.mkdtempSync(path.join(process.cwd(), 'test-fix-'));
+    const envExamplePath = path.join(tempDir, '.env.example');
+    fs.writeFileSync(envExamplePath, 'PORT=3000\n');
+
+    const missing = [{ name: 'NEW_API_KEY', locations: [{ file: 'src/app.ts', line: 5 }] }];
+    const added = fixEnvExample(envExamplePath, missing);
+
+    expect(added).toContain('NEW_API_KEY');
+    const content = fs.readFileSync(envExamplePath, 'utf-8');
+    expect(content).toContain('NEW_API_KEY=');
+
+    fs.rmSync(tempDir, { recursive: true, force: true });
   });
 });

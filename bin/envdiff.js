@@ -25,7 +25,7 @@ var __toESM = (mod, isNodeMode, target) => (target = mod != null ? __create(__ge
 
 // src/cli.ts
 var import_commander = require("commander");
-var import_node_path4 = __toESM(require("path"));
+var import_node_path5 = __toESM(require("path"));
 
 // src/config.ts
 var import_node_fs = __toESM(require("fs"));
@@ -358,23 +358,71 @@ function reportJson(report) {
   return JSON.stringify(report, null, 2);
 }
 
+// src/engine/fixer.ts
+var import_node_fs6 = __toESM(require("fs"));
+var import_node_path4 = __toESM(require("path"));
+function fixEnvExample(envExamplePath, missingVariables) {
+  if (missingVariables.length === 0) return [];
+  const absolutePath = import_node_path4.default.resolve(envExamplePath);
+  let existingContent = "";
+  if (import_node_fs6.default.existsSync(absolutePath)) {
+    existingContent = import_node_fs6.default.readFileSync(absolutePath, "utf-8");
+  }
+  if (existingContent && !existingContent.endsWith("\n")) {
+    existingContent += "\n";
+  }
+  const addedVars = [];
+  let newContent = existingContent;
+  if (!existingContent && missingVariables.length > 0) {
+    newContent += `# Added automatically by envdiff --fix
+`;
+  }
+  for (const item of missingVariables) {
+    const varName = item.name;
+    const regex = new RegExp(`^\\s*(?:export\\s+)?${varName}\\s*=`, "m");
+    if (!regex.test(newContent)) {
+      newContent += `${varName}=
+`;
+      addedVars.push(varName);
+    }
+  }
+  import_node_fs6.default.writeFileSync(absolutePath, newContent, "utf-8");
+  return addedVars;
+}
+
 // src/cli.ts
+var import_picocolors2 = __toESM(require("picocolors"));
 var program = new import_commander.Command();
-program.name("envdiff").description("Verify environment variables consistency across code, .env, and .env.example").version("1.0.0").option("-d, --dir <path>", "Directory to scan", process.cwd()).option("-c, --config <path>", "Path to custom config file (.envdiffrc)").option("--ci", "Run in CI mode (exits with code 1 on errors)").option("--json", "Output report in JSON format").action((options) => {
-  const cwd = import_node_path4.default.resolve(options.dir);
+program.name("envdiff").description("Verify environment variables consistency across code, .env, and .env.example").version("1.0.0").option("-d, --dir <path>", "Directory to scan", process.cwd()).option("-c, --config <path>", "Path to custom config file (.envdiffrc)").option("--ci", "Run in CI mode (exits with code 1 on errors)").option("--json", "Output report in JSON format").option("--fix", "Automatically add missing variables to .env.example").action((options) => {
+  const cwd = import_node_path5.default.resolve(options.dir);
   const config = loadConfig(cwd, options.config);
-  const envPath = import_node_path4.default.resolve(cwd, config.envPath);
-  const envExamplePath = import_node_path4.default.resolve(cwd, config.envExamplePath);
+  const envPath = import_node_path5.default.resolve(cwd, config.envPath);
+  const envExamplePath = import_node_path5.default.resolve(cwd, config.envExamplePath);
   const envResult = loadEnvFile(envPath);
   const envExampleResult = loadEnvFile(envExamplePath);
   const scanResult = scanCodebase(cwd);
-  const report = analyzeEnvironment(
+  let report = analyzeEnvironment(
     scanResult.usages,
     envExampleResult.variables,
     envResult.variables,
     config,
     scanResult.warnings
   );
+  if (options.fix && report.missingInExample.length > 0) {
+    const added = fixEnvExample(envExamplePath, report.missingInExample);
+    if (!options.json) {
+      console.log(import_picocolors2.default.green(`\u2728 Successfully added ${added.length} missing variable(s) to ${config.envExamplePath}
+`));
+    }
+    const updatedEnvExampleResult = loadEnvFile(envExamplePath);
+    report = analyzeEnvironment(
+      scanResult.usages,
+      updatedEnvExampleResult.variables,
+      envResult.variables,
+      config,
+      scanResult.warnings
+    );
+  }
   if (options.json) {
     console.log(reportJson(report));
   } else {

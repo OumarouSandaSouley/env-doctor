@@ -62,8 +62,16 @@ declare function analyzeEnvironment(codeUsages: Map<string, {
     line: number;
 }[]>, envExampleVars: Map<string, number>, envVars: Map<string, number>, config: EnvDiffConfig, codeWarnings: string[]): AnalysisReport;
 
+declare function fixEnvExample(envExamplePath: string, missingVariables: {
+    name: string;
+    locations: {
+        file: string;
+        line: number;
+    }[];
+}[]): string[];
+
 declare function reportConsole(report: AnalysisReport): void;
 
 declare function reportJson(report: AnalysisReport): string;
 
-export { type AnalysisReport, type DiffIssue, type EnvDiffConfig, type EnvFileResult, type ScanResult, analyzeEnvironment, loadConfig, loadEnvFile, loadIgnoreRules, reportConsole, reportJson, scanCodebase };
+export { type AnalysisReport, type DiffIssue, type EnvDiffConfig, type EnvFileResult, type ScanResult, analyzeEnvironment, fixEnvExample, loadConfig, loadEnvFile, loadIgnoreRules, reportConsole, reportJson, scanCodebase };

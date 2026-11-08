@@ -266,6 +266,38 @@ function analyzeEnvironment(codeUsages, envExampleVars, envVars, config, codeWar
   };
 }
 
+// src/engine/fixer.ts
+import fs6 from "fs";
+import path4 from "path";
+function fixEnvExample(envExamplePath, missingVariables) {
+  if (missingVariables.length === 0) return [];
+  const absolutePath = path4.resolve(envExamplePath);
+  let existingContent = "";
+  if (fs6.existsSync(absolutePath)) {
+    existingContent = fs6.readFileSync(absolutePath, "utf-8");
+  }
+  if (existingContent && !existingContent.endsWith("\n")) {
+    existingContent += "\n";
+  }
+  const addedVars = [];
+  let newContent = existingContent;
+  if (!existingContent && missingVariables.length > 0) {
+    newContent += `# Added automatically by envdiff --fix
+`;
+  }
+  for (const item of missingVariables) {
+    const varName = item.name;
+    const regex = new RegExp(`^\\s*(?:export\\s+)?${varName}\\s*=`, "m");
+    if (!regex.test(newContent)) {
+      newContent += `${varName}=
+`;
+      addedVars.push(varName);
+    }
+  }
+  fs6.writeFileSync(absolutePath, newContent, "utf-8");
+  return addedVars;
+}
+
 // src/reporters/console.ts
 import pc from "picocolors";
 function reportConsole(report) {
@@ -330,6 +362,7 @@ function reportJson(report) {
 }
 export {
   analyzeEnvironment,
+  fixEnvExample,
   loadConfig,
   loadEnvFile,
   loadIgnoreRules,
