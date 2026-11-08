@@ -1,6 +1,6 @@
 <div align="center">
 
-![envdiff logo](logo.png)
+<img src="logo.png" width="64" alt="envdiff logo" />
 
 # envdiff
 
