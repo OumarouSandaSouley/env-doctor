@@ -1,5 +1,5 @@
 {
-  "name": "env-doctor",
+  "name": "@oumarou_sanda_souley/env-doctor",
   "version": "1.0.0",
   "description": "Verify environment variables consistency across code, .env, and .env.example",
   "bin": {

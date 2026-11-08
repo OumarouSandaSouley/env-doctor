@@ -6,7 +6,7 @@
 
 **Check environment variables consistency before deployment.** Scan your code, cross-reference `.env` and `.env.example`, and catch missing, unused, or mismatched variables before they break production.
 
-[![npm](https://img.shields.io/npm/v/env-doctor.svg?style=flat-square)](https://www.npmjs.com/package/env-doctor)
+[![npm](https://img.shields.io/npm/v/env-doctor.svg?style=flat-square)](https://www.npmjs.com/package/@oumarou_sanda_souley/env-doctor)
 [![license](https://img.shields.io/badge/license-MIT-blue.svg?style=flat-square)](LICENSE)
 [![node](https://img.shields.io/badge/node-%3E%3D18-brightgreen.svg?style=flat-square)](#requirements)
 
@@ -38,32 +38,32 @@ Environment variables are a frequent source of silent bugs. A developer adds `ST
 ## Install
 
 ```bash
-npm install -g env-doctor
+npm install -g @oumarou_sanda_souley/env-doctor
 ```
 
 Or run without installing:
 
 ```bash
-npx env-doctor
+npx @oumarou_sanda_souley/env-doctor
 ```
 
 ## Quick start
 
 ```bash
 # Run standard consistency check
-npx env-doctor
+npx @oumarou_sanda_souley/env-doctor
 
 # Run in CI mode (blocks on errors)
-npx env-doctor --ci
+npx @oumarou_sanda_souley/env-doctor --ci
 
 # Automatically add missing variables to .env.example
-npx env-doctor --fix
+npx @oumarou_sanda_souley/env-doctor --fix
 
 # Enable security & format checks
-npx env-doctor --security
+npx @oumarou_sanda_souley/env-doctor --security
 
 # Generate markdown report for PRs
-npx env-doctor --markdown
+npx @oumarou_sanda_souley/env-doctor --markdown
 ```
 
 ## Usage
