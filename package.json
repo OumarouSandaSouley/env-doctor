@@ -1,9 +1,9 @@
 {
-  "name": "envdiff",
+  "name": "env-doctor",
   "version": "1.0.0",
   "description": "Verify environment variables consistency across code, .env, and .env.example",
   "bin": {
-    "envdiff": "./bin/envdiff.js"
+    "env-doctor": "./bin/env-doctor.js"
   },
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",

@@ -10,7 +10,7 @@ export default defineConfig([
   },
   {
     entry: {
-      envdiff: 'src/cli.ts',
+      'env-doctor': 'src/cli.ts',
     },
     format: ['cjs'],
     outDir: 'bin',

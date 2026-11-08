@@ -1,12 +1,12 @@
 <div align="center">
 
-<img src="logo.png" width="120" alt="envdiff logo" />
+<img src="logo.png" width="64" alt="env-doctor logo" />
 
-# envdiff
+# env-doctor
 
 **Check environment variables consistency before deployment.** Scan your code, cross-reference `.env` and `.env.example`, and catch missing, unused, or mismatched variables before they break production.
 
-[![npm](https://img.shields.io/npm/v/envdiff.svg?style=flat-square)](https://www.npmjs.com/package/envdiff)
+[![npm](https://img.shields.io/npm/v/env-doctor.svg?style=flat-square)](https://www.npmjs.com/package/env-doctor)
 [![license](https://img.shields.io/badge/license-MIT-blue.svg?style=flat-square)](LICENSE)
 [![node](https://img.shields.io/badge/node-%3E%3D18-brightgreen.svg?style=flat-square)](#requirements)
 
@@ -18,7 +18,7 @@
 
 Environment variables are a frequent source of silent bugs. A developer adds `STRIPE_KEY` in code but forgets `.env.example`, a colleague clones the repository and nothing works. A renamed variable leaves the old one lingering everywhere. A missing variable in production crashes the app at 2 AM. 
 
-`envdiff` bridges the gap between your codebase, your local `.env`, and your example file.
+`env-doctor` bridges the gap between your codebase, your local `.env`, and your example file.
 
 ## Features
 
@@ -38,38 +38,38 @@ Environment variables are a frequent source of silent bugs. A developer adds `ST
 ## Install
 
 ```bash
-npm install -g envdiff
+npm install -g env-doctor
 ```
 
 Or run without installing:
 
 ```bash
-npx envdiff
+npx env-doctor
 ```
 
 ## Quick start
 
 ```bash
 # Run standard consistency check
-npx envdiff
+npx env-doctor
 
 # Run in CI mode (blocks on errors)
-npx envdiff --ci
+npx env-doctor --ci
 
 # Automatically add missing variables to .env.example
-npx envdiff --fix
+npx env-doctor --fix
 
 # Enable security & format checks
-npx envdiff --security
+npx env-doctor --security
 
 # Generate markdown report for PRs
-npx envdiff --markdown
+npx env-doctor --markdown
 ```
 
 ## Usage
 
 ```text
-envdiff [options]
+env-doctor [options]
 ```
 
 ### Options
@@ -112,14 +112,14 @@ Optional JSON config (`.envdiffrc`) at the project root:
 ### Ignoring Files, Folders & Variables
 
 - **`.envdiffignore`** : Permet d'ignorer des fichiers, dossiers ou variables spécifiques lors de l'analyse (similaire au `.gitignore`).
-- **`.gitignore`** : `envdiff` respecte automatiquement vos règles `.gitignore` pour éviter de scanner les dossiers non suivis ou lourds (`node_modules`, `dist`, etc.).
+- **`.gitignore`** : `env-doctor` respecte automatiquement vos règles `.gitignore` pour éviter de scanner les dossiers non suivis ou lourds (`node_modules`, `dist`, etc.).
 
 ## Project layout
 
 ```text
-envdiff/
+env-doctor/
 ├── bin/
-│   └── envdiff.js          # CLI entrypoint
+│   └── env-doctor.js       # CLI entrypoint
 ├── src/
 │   ├── index.ts            # Programmatic API
 │   ├── cli.ts              # Commander entrypoint
@@ -147,11 +147,11 @@ envdiff/
 ## Local development
 
 ```bash
-git clone https://github.com/OumarouSandaSouley/envdiff.git
-cd envdiff
+git clone https://github.com/OumarouSandaSouley/env-doctor.git
+cd env-doctor
 npm install
 npm run build
-node bin/envdiff.js --dir .
+node bin/env-doctor.js --dir .
 ```
 
 Useful scripts:
@@ -172,4 +172,4 @@ Contributions are welcome. Please open an issue or pull request to discuss impro
 
 ## License
 
-[MIT](LICENSE) © the envdiff contributors
+[MIT](LICENSE) © the env-doctor contributors
