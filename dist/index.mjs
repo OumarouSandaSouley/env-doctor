@@ -360,6 +360,137 @@ function reportConsole(report) {
 function reportJson(report) {
   return JSON.stringify(report, null, 2);
 }
+
+// src/reporters/markdown.ts
+function reportMarkdown(report, securityIssues = []) {
+  let md = `### \u{1F50D} \`envdiff\` Environment Consistency Report
+
+`;
+  let hasIssues = false;
+  if (report.missingInExample.length > 0) {
+    hasIssues = true;
+    md += `#### \u274C Missing in \`.env.example\` (${report.missingInExample.length})
+`;
+    md += `| Variable | Referenced In |
+|---|---|
+`;
+    for (const item of report.missingInExample) {
+      const locs = item.locations.map((l) => `\`${l.file}:${l.line}\``).join(", ");
+      md += `| \`${item.name}\` | ${locs} |
+`;
+    }
+    md += `
+`;
+  }
+  if (report.missingInEnv.length > 0) {
+    hasIssues = true;
+    md += `#### \u274C Missing in local \`.env\` (${report.missingInEnv.length})
+`;
+    md += `| Variable | .env.example Line |
+|---|---|
+`;
+    for (const item of report.missingInEnv) {
+      md += `| \`${item.name}\` | line ${item.exampleLine} |
+`;
+    }
+    md += `
+`;
+  }
+  if (securityIssues.length > 0) {
+    hasIssues = true;
+    md += `#### \u{1F512} Security & Format Warnings (${securityIssues.length})
+`;
+    md += `| Variable | Issue | Line |
+|---|---|---|
+`;
+    for (const issue of securityIssues) {
+      md += `| \`${issue.variable}\` | ${issue.message} | line ${issue.line} |
+`;
+    }
+    md += `
+`;
+  }
+  if (report.unusedInCode.length > 0) {
+    md += `#### \u26A0\uFE0F Unused Variables in Code (${report.unusedInCode.length})
+`;
+    md += `| Variable | .env.example Line |
+|---|---|
+`;
+    for (const item of report.unusedInCode) {
+      md += `| \`${item.name}\` | line ${item.line} |
+`;
+    }
+    md += `
+`;
+  }
+  if (!hasIssues && report.unusedInCode.length === 0 && securityIssues.length === 0) {
+    md += `\u2728 **All environment variables are consistent, secure, and synchronized!** \u{1F389}
+`;
+  } else if (!hasIssues) {
+    md += `\u2705 **No critical errors found.** Some warnings or unused variables detected.
+`;
+  } else {
+    md += `\u{1F4A5} **Consistency check failed.** Please update your environment files before merging.
+`;
+  }
+  return md;
+}
+
+// src/engine/validator.ts
+import fs7 from "fs";
+import path5 from "path";
+function validateEnvSecurity(envPath) {
+  const issues = [];
+  const absolutePath = path5.resolve(envPath);
+  if (!fs7.existsSync(absolutePath)) {
+    return issues;
+  }
+  try {
+    const content = fs7.readFileSync(absolutePath, "utf-8");
+    const lines = content.split(/\r?\n/);
+    const weakValues = ["password", "secret", "12345", "changeme", "admin", "test", "foo", "bar", "123456", "qwerty"];
+    lines.forEach((line, index) => {
+      const lineNum = index + 1;
+      const trimmed = line.trim();
+      if (!trimmed || trimmed.startsWith("#")) return;
+      const match = trimmed.match(/^(?:export\s+)?([A-Za-z_][A-Za-z0-9_]*)\s*=\s*(['"]?)(.*?)\2\s*$/);
+      if (match) {
+        const varName = match[1];
+        const val = match[3].trim().toLowerCase();
+        if (varName !== varName.toUpperCase()) {
+          issues.push({
+            variable: varName,
+            type: "naming_convention",
+            message: `Variable '${varName}' should be in UPPER_SNAKE_CASE`,
+            line: lineNum
+          });
+        }
+        if (weakValues.includes(val) || val.length < 3) {
+          issues.push({
+            variable: varName,
+            type: "weak_value",
+            message: `Variable '${varName}' has a weak or default value ('${match[3]}')`,
+            line: lineNum
+          });
+        }
+        if ((varName.endsWith("_URL") || varName.endsWith("_URI")) && val.length > 0) {
+          try {
+            new URL(match[3].trim());
+          } catch (e) {
+            issues.push({
+              variable: varName,
+              type: "invalid_url",
+              message: `Variable '${varName}' does not contain a valid URL format ('${match[3]}')`,
+              line: lineNum
+            });
+          }
+        }
+      }
+    });
+  } catch (e) {
+  }
+  return issues;
+}
 export {
   analyzeEnvironment,
   fixEnvExample,
@@ -368,6 +499,8 @@ export {
   loadIgnoreRules,
   reportConsole,
   reportJson,
-  scanCodebase
+  reportMarkdown,
+  scanCodebase,
+  validateEnvSecurity
 };
 //# sourceMappingURL=index.mjs.map

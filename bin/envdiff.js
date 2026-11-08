@@ -25,7 +25,8 @@ var __toESM = (mod, isNodeMode, target) => (target = mod != null ? __create(__ge
 
 // src/cli.ts
 var import_commander = require("commander");
-var import_node_path5 = __toESM(require("path"));
+var import_node_path6 = __toESM(require("path"));
+var import_node_fs8 = __toESM(require("fs"));
 
 // src/config.ts
 var import_node_fs = __toESM(require("fs"));
@@ -295,6 +296,62 @@ function analyzeEnvironment(codeUsages, envExampleVars, envVars, config, codeWar
   };
 }
 
+// src/engine/validator.ts
+var import_node_fs6 = __toESM(require("fs"));
+var import_node_path4 = __toESM(require("path"));
+function validateEnvSecurity(envPath) {
+  const issues = [];
+  const absolutePath = import_node_path4.default.resolve(envPath);
+  if (!import_node_fs6.default.existsSync(absolutePath)) {
+    return issues;
+  }
+  try {
+    const content = import_node_fs6.default.readFileSync(absolutePath, "utf-8");
+    const lines = content.split(/\r?\n/);
+    const weakValues = ["password", "secret", "12345", "changeme", "admin", "test", "foo", "bar", "123456", "qwerty"];
+    lines.forEach((line, index) => {
+      const lineNum = index + 1;
+      const trimmed = line.trim();
+      if (!trimmed || trimmed.startsWith("#")) return;
+      const match = trimmed.match(/^(?:export\s+)?([A-Za-z_][A-Za-z0-9_]*)\s*=\s*(['"]?)(.*?)\2\s*$/);
+      if (match) {
+        const varName = match[1];
+        const val = match[3].trim().toLowerCase();
+        if (varName !== varName.toUpperCase()) {
+          issues.push({
+            variable: varName,
+            type: "naming_convention",
+            message: `Variable '${varName}' should be in UPPER_SNAKE_CASE`,
+            line: lineNum
+          });
+        }
+        if (weakValues.includes(val) || val.length < 3) {
+          issues.push({
+            variable: varName,
+            type: "weak_value",
+            message: `Variable '${varName}' has a weak or default value ('${match[3]}')`,
+            line: lineNum
+          });
+        }
+        if ((varName.endsWith("_URL") || varName.endsWith("_URI")) && val.length > 0) {
+          try {
+            new URL(match[3].trim());
+          } catch (e) {
+            issues.push({
+              variable: varName,
+              type: "invalid_url",
+              message: `Variable '${varName}' does not contain a valid URL format ('${match[3]}')`,
+              line: lineNum
+            });
+          }
+        }
+      }
+    });
+  } catch (e) {
+  }
+  return issues;
+}
+
 // src/reporters/console.ts
 var import_picocolors = __toESM(require("picocolors"));
 function reportConsole(report) {
@@ -358,15 +415,90 @@ function reportJson(report) {
   return JSON.stringify(report, null, 2);
 }
 
+// src/reporters/markdown.ts
+function reportMarkdown(report, securityIssues = []) {
+  let md = `### \u{1F50D} \`envdiff\` Environment Consistency Report
+
+`;
+  let hasIssues = false;
+  if (report.missingInExample.length > 0) {
+    hasIssues = true;
+    md += `#### \u274C Missing in \`.env.example\` (${report.missingInExample.length})
+`;
+    md += `| Variable | Referenced In |
+|---|---|
+`;
+    for (const item of report.missingInExample) {
+      const locs = item.locations.map((l) => `\`${l.file}:${l.line}\``).join(", ");
+      md += `| \`${item.name}\` | ${locs} |
+`;
+    }
+    md += `
+`;
+  }
+  if (report.missingInEnv.length > 0) {
+    hasIssues = true;
+    md += `#### \u274C Missing in local \`.env\` (${report.missingInEnv.length})
+`;
+    md += `| Variable | .env.example Line |
+|---|---|
+`;
+    for (const item of report.missingInEnv) {
+      md += `| \`${item.name}\` | line ${item.exampleLine} |
+`;
+    }
+    md += `
+`;
+  }
+  if (securityIssues.length > 0) {
+    hasIssues = true;
+    md += `#### \u{1F512} Security & Format Warnings (${securityIssues.length})
+`;
+    md += `| Variable | Issue | Line |
+|---|---|---|
+`;
+    for (const issue of securityIssues) {
+      md += `| \`${issue.variable}\` | ${issue.message} | line ${issue.line} |
+`;
+    }
+    md += `
+`;
+  }
+  if (report.unusedInCode.length > 0) {
+    md += `#### \u26A0\uFE0F Unused Variables in Code (${report.unusedInCode.length})
+`;
+    md += `| Variable | .env.example Line |
+|---|---|
+`;
+    for (const item of report.unusedInCode) {
+      md += `| \`${item.name}\` | line ${item.line} |
+`;
+    }
+    md += `
+`;
+  }
+  if (!hasIssues && report.unusedInCode.length === 0 && securityIssues.length === 0) {
+    md += `\u2728 **All environment variables are consistent, secure, and synchronized!** \u{1F389}
+`;
+  } else if (!hasIssues) {
+    md += `\u2705 **No critical errors found.** Some warnings or unused variables detected.
+`;
+  } else {
+    md += `\u{1F4A5} **Consistency check failed.** Please update your environment files before merging.
+`;
+  }
+  return md;
+}
+
 // src/engine/fixer.ts
-var import_node_fs6 = __toESM(require("fs"));
-var import_node_path4 = __toESM(require("path"));
+var import_node_fs7 = __toESM(require("fs"));
+var import_node_path5 = __toESM(require("path"));
 function fixEnvExample(envExamplePath, missingVariables) {
   if (missingVariables.length === 0) return [];
-  const absolutePath = import_node_path4.default.resolve(envExamplePath);
+  const absolutePath = import_node_path5.default.resolve(envExamplePath);
   let existingContent = "";
-  if (import_node_fs6.default.existsSync(absolutePath)) {
-    existingContent = import_node_fs6.default.readFileSync(absolutePath, "utf-8");
+  if (import_node_fs7.default.existsSync(absolutePath)) {
+    existingContent = import_node_fs7.default.readFileSync(absolutePath, "utf-8");
   }
   if (existingContent && !existingContent.endsWith("\n")) {
     existingContent += "\n";
@@ -386,18 +518,18 @@ function fixEnvExample(envExamplePath, missingVariables) {
       addedVars.push(varName);
     }
   }
-  import_node_fs6.default.writeFileSync(absolutePath, newContent, "utf-8");
+  import_node_fs7.default.writeFileSync(absolutePath, newContent, "utf-8");
   return addedVars;
 }
 
 // src/cli.ts
 var import_picocolors2 = __toESM(require("picocolors"));
 var program = new import_commander.Command();
-program.name("envdiff").description("Verify environment variables consistency across code, .env, and .env.example").version("1.0.0").option("-d, --dir <path>", "Directory to scan", process.cwd()).option("-c, --config <path>", "Path to custom config file (.envdiffrc)").option("--ci", "Run in CI mode (exits with code 1 on errors)").option("--json", "Output report in JSON format").option("--fix", "Automatically add missing variables to .env.example").action((options) => {
-  const cwd = import_node_path5.default.resolve(options.dir);
+program.name("envdiff").description("Verify environment variables consistency across code, .env, and .env.example").version("1.0.0").option("-d, --dir <path>", "Directory to scan", process.cwd()).option("-c, --config <path>", "Path to custom config file (.envdiffrc)").option("--env-file <path>", "Path to local .env file").option("--env-example <path>", "Path to .env.example file").option("--ci", "Run in CI mode (exits with code 1 on errors)").option("--json", "Output report in JSON format").option("--markdown [path]", "Generate Markdown report file (default: envdiff-report.md)").option("--fix", "Automatically add missing variables to .env.example").option("--security", "Enable security and format validation for .env values").action((options) => {
+  const cwd = import_node_path6.default.resolve(options.dir);
   const config = loadConfig(cwd, options.config);
-  const envPath = import_node_path5.default.resolve(cwd, config.envPath);
-  const envExamplePath = import_node_path5.default.resolve(cwd, config.envExamplePath);
+  const envPath = import_node_path6.default.resolve(cwd, options.envFile || config.envPath);
+  const envExamplePath = import_node_path6.default.resolve(cwd, options.envExample || config.envExamplePath);
   const envResult = loadEnvFile(envPath);
   const envExampleResult = loadEnvFile(envExamplePath);
   const scanResult = scanCodebase(cwd);
@@ -408,10 +540,11 @@ program.name("envdiff").description("Verify environment variables consistency ac
     config,
     scanResult.warnings
   );
+  const securityIssues = options.security ? validateEnvSecurity(envPath) : [];
   if (options.fix && report.missingInExample.length > 0) {
     const added = fixEnvExample(envExamplePath, report.missingInExample);
-    if (!options.json) {
-      console.log(import_picocolors2.default.green(`\u2728 Successfully added ${added.length} missing variable(s) to ${config.envExamplePath}
+    if (!options.json && options.markdown === void 0) {
+      console.log(import_picocolors2.default.green(`\u2728 Successfully added ${added.length} missing variable(s) to ${envExamplePath}
 `));
     }
     const updatedEnvExampleResult = loadEnvFile(envExamplePath);
@@ -424,11 +557,25 @@ program.name("envdiff").description("Verify environment variables consistency ac
     );
   }
   if (options.json) {
-    console.log(reportJson(report));
+    console.log(reportJson({ ...report, securityIssues }));
+  } else if (options.markdown !== void 0) {
+    const mdContent = reportMarkdown(report, securityIssues);
+    const mdFilePath = import_node_path6.default.resolve(cwd, typeof options.markdown === "string" ? options.markdown : "envdiff-report.md");
+    import_node_fs8.default.writeFileSync(mdFilePath, mdContent, "utf-8");
+    console.log(import_picocolors2.default.green(`\u2728 Markdown report successfully generated at ${mdFilePath}
+`));
   } else {
     reportConsole(report);
+    if (securityIssues.length > 0) {
+      console.log(import_picocolors2.default.yellow(import_picocolors2.default.bold(`\u{1F512} Security & Format Warnings (${securityIssues.length}):`)));
+      for (const issue of securityIssues) {
+        console.log(`   \u2022 [${issue.variable}] ${issue.message} ${issue.line ? `(line ${issue.line})` : ""}`);
+      }
+      console.log("");
+    }
   }
-  if (options.ci && !report.isValid) {
+  const hasSecurityErrors = securityIssues.length > 0 && options.security;
+  if (options.ci && (!report.isValid || hasSecurityErrors)) {
     process.exit(1);
   }
 });

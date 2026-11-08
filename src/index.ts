@@ -5,3 +5,5 @@ export { analyzeEnvironment, AnalysisReport, DiffIssue } from './engine/analyzer
 export { fixEnvExample } from './engine/fixer.js';
 export { reportConsole } from './reporters/console.js';
 export { reportJson } from './reporters/json.js';
+export { reportMarkdown } from './reporters/markdown.js';
+export { validateEnvSecurity, SecurityIssue } from './engine/validator.js';

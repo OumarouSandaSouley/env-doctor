@@ -74,4 +74,14 @@ declare function reportConsole(report: AnalysisReport): void;
 
 declare function reportJson(report: AnalysisReport): string;
 
-export { type AnalysisReport, type DiffIssue, type EnvDiffConfig, type EnvFileResult, type ScanResult, analyzeEnvironment, fixEnvExample, loadConfig, loadEnvFile, loadIgnoreRules, reportConsole, reportJson, scanCodebase };
+interface SecurityIssue {
+    variable: string;
+    type: 'weak_value' | 'invalid_url' | 'naming_convention';
+    message: string;
+    line?: number;
+}
+declare function validateEnvSecurity(envPath: string): SecurityIssue[];
+
+declare function reportMarkdown(report: AnalysisReport, securityIssues?: SecurityIssue[]): string;
+
+export { type AnalysisReport, type DiffIssue, type EnvDiffConfig, type EnvFileResult, type ScanResult, type SecurityIssue, analyzeEnvironment, fixEnvExample, loadConfig, loadEnvFile, loadIgnoreRules, reportConsole, reportJson, reportMarkdown, scanCodebase, validateEnvSecurity };

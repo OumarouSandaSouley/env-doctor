@@ -2,6 +2,8 @@ import { describe, it, expect } from 'vitest';
 import { loadEnvFile } from '../src/env/loader.js';
 import { analyzeEnvironment } from '../src/engine/analyzer.js';
 import { fixEnvExample } from '../src/engine/fixer.js';
+import { validateEnvSecurity } from '../src/engine/validator.js';
+import { reportMarkdown } from '../src/reporters/markdown.js';
 import { defaultConfig } from '../src/config.js';
 import fs from 'node:fs';
 import path from 'node:path';
@@ -47,5 +49,29 @@ describe('envdiff core tests', () => {
     expect(content).toContain('NEW_API_KEY=');
 
     fs.rmSync(tempDir, { recursive: true, force: true });
+  });
+
+  it('should validate security and format issues', () => {
+    const tempDir = fs.mkdtempSync(path.join(process.cwd(), 'test-sec-'));
+    const envPath = path.join(tempDir, '.env');
+    fs.writeFileSync(envPath, 'api_key=123\nDATABASE_URL=not-a-url\n');
+
+    const issues = validateEnvSecurity(envPath);
+    expect(issues.length).toBeGreaterThan(0);
+
+    fs.rmSync(tempDir, { recursive: true, force: true });
+  });
+
+  it('should generate markdown report for PR comments', () => {
+    const report = {
+      isValid: true,
+      missingInExample: [],
+      unusedInCode: [],
+      missingInEnv: [],
+      missingInExampleFromEnv: [],
+      warnings: [],
+    };
+    const md = reportMarkdown(report, []);
+    expect(md).toContain('envdiff');
   });
 });
