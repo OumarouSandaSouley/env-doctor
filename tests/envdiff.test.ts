@@ -1,0 +1,35 @@
+import { describe, it, expect } from 'vitest';
+import { loadEnvFile } from '../src/env/loader.js';
+import { analyzeEnvironment } from '../src/engine/analyzer.js';
+import { defaultConfig } from '../src/config.js';
+import fs from 'node:fs';
+import path from 'node:path';
+
+describe('envdiff core tests', () => {
+  it('should load env file variables correctly', () => {
+    const tempDir = fs.mkdtempSync(path.join(process.cwd(), 'test-env-'));
+    const envPath = path.join(tempDir, '.env');
+    fs.writeFileSync(envPath, 'DATABASE_URL=postgres://localhost\nAPI_KEY=secret123\n# Comment line\n');
+
+    const result = loadEnvFile(envPath);
+    expect(result.exists).toBe(true);
+    expect(result.variables.get('DATABASE_URL')).toBe(1);
+    expect(result.variables.get('API_KEY')).toBe(2);
+
+    fs.rmSync(tempDir, { recursive: true, force: true });
+  });
+
+  it('should detect missing variables in example', () => {
+    const usages = new Map<string, { file: string; line: number }[]>();
+    usages.set('STRIPE_KEY', [{ file: 'src/index.ts', line: 10 }]);
+
+    const envExampleVars = new Map<string, number>();
+    const envVars = new Map<string, number>();
+
+    const report = analyzeEnvironment(usages, envExampleVars, envVars, defaultConfig, []);
+
+    expect(report.isValid).toBe(false);
+    expect(report.missingInExample.length).toBe(1);
+    expect(report.missingInExample[0].name).toBe('STRIPE_KEY');
+  });
+});
