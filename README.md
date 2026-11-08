@@ -1,6 +1,6 @@
 <div align="center">
 
-<img src="logo.png" width="128" alt="env-doctor logo" />
+<img src="https://raw.githubusercontent.com/OumarouSandaSouley/env-doctor/main/logo.png" width="128" alt="env-doctor logo" />
 
 # env-doctor
 

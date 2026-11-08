@@ -1,6 +1,6 @@
 {
   "name": "@oumarou_sanda_souley/env-doctor",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Verify environment variables consistency across code, .env, and .env.example",
   "bin": {
     "env-doctor": "./bin/env-doctor.js"
